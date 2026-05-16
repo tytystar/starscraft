@@ -1,0 +1,47 @@
+import { createBrowserClient } from "@supabase/ssr";
+
+export const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export type QuoteStatus =
+  | "received"
+  | "approved"
+  | "printing"
+  | "quality_check"
+  | "ready"
+  | "shipped";
+
+export type Quote = {
+  id: string;
+  created_at: string;
+  name: string;
+  email: string;
+  model_url: string;
+  quantity: number;
+  color: string;
+  material: string;
+  nfc_chip: boolean;
+  customizations: string | null;
+  status: QuoteStatus;
+  order_id: string;
+};
+
+export type TimeLapse = {
+  id: string;
+  title: string;
+  caption: string | null;
+  video_url: string;
+  material_tag: string | null;
+  color_tag: string | null;
+  visible: boolean;
+  sort_order: number;
+};
+
+export type AdminOption = {
+  id: string;
+  type: "color" | "material";
+  label: string;
+  value: string;
+};

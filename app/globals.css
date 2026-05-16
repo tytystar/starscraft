@@ -1,26 +1,80 @@
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #05050a;
+  --foreground: #e8eaf0;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, sans-serif;
 }
+
+/* Futuristic grid background */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(99,179,237,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,179,237,0.03) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* Glow text */
+.glow-orange {
+  text-shadow: 0 0 40px rgba(251,146,60,0.5);
+}
+.glow-blue {
+  text-shadow: 0 0 40px rgba(99,179,237,0.4);
+}
+
+/* Scanline overlay */
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+}
+
+/* Animated border glow */
+@keyframes borderPulse {
+  0%, 100% { box-shadow: 0 0 0px rgba(251,146,60,0); }
+  50%       { box-shadow: 0 0 20px rgba(251,146,60,0.15); }
+}
+.border-pulse { animation: borderPulse 3s ease-in-out infinite; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.6s ease both; }
+
+@keyframes flicker {
+  0%, 95%, 100% { opacity: 1; }
+  96%           { opacity: 0.7; }
+  97%           { opacity: 1; }
+  98%           { opacity: 0.5; }
+}
+.flicker { animation: flicker 6s infinite; }
+
+/* Neon line */
+.neon-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(251,146,60,0.6), transparent);
+}
+
+/* Corner bracket decoration */
+.corner-tl { border-top: 1px solid rgba(251,146,60,0.4); border-left: 1px solid rgba(251,146,60,0.4); }
+.corner-tr { border-top: 1px solid rgba(251,146,60,0.4); border-right: 1px solid rgba(251,146,60,0.4); }
+.corner-bl { border-bottom: 1px solid rgba(251,146,60,0.4); border-left: 1px solid rgba(251,146,60,0.4); }
+.corner-br { border-bottom: 1px solid rgba(251,146,60,0.4); border-right: 1px solid rgba(251,146,60,0.4); }
