@@ -48,23 +48,24 @@ export default function Navbar() {
               </a>
             ))}
 
-            {/* Admin links */}
+            {/* Dashboard for all logged-in users */}
+            {user && (
+              <Link
+                href="/dashboard"
+                className="px-3 py-1.5 text-xs font-mono tracking-wide text-orange-400/70 hover:text-orange-400 hover:bg-orange-500/5 rounded transition-all flex items-center gap-1.5"
+              >
+                <LayoutDashboard size={12} />
+                My Orders
+              </Link>
+            )}
+            {/* Admin portal — admins only */}
             {isAdmin && (
-              <>
-                <Link
-                  href="/dashboard"
-                  className="px-3 py-1.5 text-xs font-mono tracking-wide text-orange-400/70 hover:text-orange-400 hover:bg-orange-500/5 rounded transition-all flex items-center gap-1.5"
-                >
-                  <LayoutDashboard size={12} />
-                  Dashboard
-                </Link>
-                <Link
-                  href="/admin"
-                  className="px-3 py-1.5 text-xs font-mono tracking-wide text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 rounded transition-all border border-orange-500/30 hover:border-orange-400/50"
-                >
-                  ⚙️ Admin
-                </Link>
-              </>
+              <Link
+                href="/admin"
+                className="px-3 py-1.5 text-xs font-mono tracking-wide text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 rounded transition-all border border-orange-500/30 hover:border-orange-400/50"
+              >
+                ⚙️ Admin
+              </Link>
             )}
           </div>
 
@@ -115,18 +116,18 @@ export default function Navbar() {
               {l.label}
             </a>
           ))}
+          {user && (
+            <Link href="/dashboard" onClick={() => setOpen(false)}
+              className="text-xs font-mono tracking-wide text-orange-400/70 hover:text-orange-400 flex items-center gap-1.5 transition-colors">
+              <LayoutDashboard size={12} />
+              My Orders
+            </Link>
+          )}
           {isAdmin && (
-            <>
-              <Link href="/dashboard" onClick={() => setOpen(false)}
-                className="text-xs font-mono tracking-wide text-orange-400/70 hover:text-orange-400 flex items-center gap-1.5 transition-colors">
-                <LayoutDashboard size={12} />
-                Dashboard
-              </Link>
-              <Link href="/admin" onClick={() => setOpen(false)}
-                className="text-xs font-mono tracking-wide text-orange-400 hover:text-orange-300 transition-colors">
-                ⚙️ Admin Portal
-              </Link>
-            </>
+            <Link href="/admin" onClick={() => setOpen(false)}
+              className="text-xs font-mono tracking-wide text-orange-400 hover:text-orange-300 transition-colors">
+              ⚙️ Admin Portal
+            </Link>
           )}
           <div className="flex items-center justify-between mt-2 pt-3 border-t border-white/5">
             <Link href="/order-status" className="text-xs font-mono tracking-widest text-orange-400">
