@@ -9,8 +9,18 @@ const STATUS_STEPS: { key: QuoteStatus; label: string }[] = [
   { key: "approved", label: "Approved" },
   { key: "printing", label: "Printing" },
   { key: "quality_check", label: "Quality Check" },
-  { key: "ready", label: "Ready / Shipped" },
+  { key: "ready", label: "Ready to Ship" },
+  { key: "shipped", label: "Shipped" },
 ];
+
+function getTrackingUrl(carrier: string, trackingNumber: string): string | null {
+  const c = carrier.toUpperCase();
+  if (c === "USPS") return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`;
+  if (c === "UPS") return `https://www.ups.com/track?tracknum=${trackingNumber}`;
+  if (c === "FEDEX") return `https://www.fedex.com/apps/fedextrack/?tracknumbers=${trackingNumber}`;
+  if (c === "DHL") return `https://www.dhl.com/us-en/home/tracking/tracking-ecommerce.html?submit=1&tracking-id=${trackingNumber}`;
+  return null;
+}
 
 export default function OrderStatusPage() {
   const [orderId, setOrderId] = useState("");
@@ -79,6 +89,34 @@ export default function OrderStatusPage() {
               <p className="text-orange-400 font-black text-xl tracking-widest">{quote.order_id}</p>
             </div>
 
+            {/* Tracking info */}
+            {quote.tracking_number ? (
+              <div className="bg-orange-500/8 border border-orange-500/30 rounded-2xl p-6 mb-6">
+                <p className="text-orange-400 font-black text-lg mb-1">📦 Your package is on the way!</p>
+                <p className="text-white/50 text-xs mb-4">Your order has shipped via {quote.tracking_carrier}.</p>
+                <div className="bg-white/5 border border-white/10 rounded-xl px-5 py-4 mb-4">
+                  <p className="text-white/30 text-xs mb-1">TRACKING NUMBER</p>
+                  <p className="text-white font-black text-lg tracking-widest font-mono">{quote.tracking_number}</p>
+                  <p className="text-white/30 text-xs mt-1">via {quote.tracking_carrier}</p>
+                </div>
+                {getTrackingUrl(quote.tracking_carrier!, quote.tracking_number) && (
+                  <a
+                    href={getTrackingUrl(quote.tracking_carrier!, quote.tracking_number)!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block bg-orange-500 hover:bg-orange-400 text-white font-bold px-6 py-3 rounded-xl text-sm transition-colors"
+                  >
+                    Track with {quote.tracking_carrier} →
+                  </a>
+                )}
+              </div>
+            ) : quote.payment_status === "paid" ? (
+              <div className="bg-orange-500/6 border border-orange-500/20 rounded-2xl p-5 mb-6">
+                <p className="text-orange-300 font-semibold text-sm">⏱ Your tracking code will be ready in 48 hours</p>
+                <p className="text-white/35 text-xs mt-1">Your payment has been received. We are preparing your shipment.</p>
+              </div>
+            ) : null}
+
             <div className="flex flex-col gap-2 mb-6">
               {STATUS_STEPS.map((step, i) => (
                 <div
@@ -114,6 +152,7 @@ export default function OrderStatusPage() {
               <Row label="Quantity" value={String(quote.quantity)} />
               {quote.nfc_chip && <Row label="NFC Chip" value="Yes" />}
               {quote.customizations && <Row label="Notes" value={quote.customizations} />}
+              {quote.shipping_address && <Row label="Ship To" value={quote.shipping_address} />}
             </div>
           </div>
         )}

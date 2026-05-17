@@ -26,6 +26,11 @@ export type Quote = {
   customizations: string | null;
   status: QuoteStatus;
   order_id: string;
+  shipping_address: string | null;
+  tracking_number: string | null;
+  tracking_carrier: string | null;
+  quoted_price: string | null;
+  payment_status: string;
 };
 
 export type TimeLapse = {

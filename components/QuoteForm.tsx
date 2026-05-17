@@ -17,6 +17,12 @@ export default function QuoteForm() {
     color: "", material: "", nfc_chip: false, customizations: "",
   });
 
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [zip, setZip] = useState("");
+  const [country, setCountry] = useState("United States");
+
   useEffect(() => {
     supabase.from("admin_options").select("*").order("label").then(({ data }) => {
       if (data) {
@@ -35,13 +41,20 @@ export default function QuoteForm() {
     e.preventDefault();
     setError(""); setLoading(true);
     const id = `SC-${Date.now().toString(36).toUpperCase()}`;
-    const { error: err } = await supabase.from("quotes").insert({ ...form, order_id: id, status: "received" });
+    const shipping_address = `${address}, ${city}, ${state} ${zip}, ${country}`;
+    const { error: err } = await supabase.from("quotes").insert({
+      ...form,
+      order_id: id,
+      status: "received",
+      shipping_address,
+      payment_status: "unpaid",
+    });
     if (err) { setError("Something went wrong. Please try again."); setLoading(false); return; }
     // Notify admin via email
     await fetch("/api/email/quote-received", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, order_id: id }),
+      body: JSON.stringify({ ...form, order_id: id, shipping_address }),
     }).catch(() => {}); // don't block on email failure
     setOrderId(id); setSubmitted(true); setLoading(false);
   }
@@ -130,6 +143,33 @@ export default function QuoteForm() {
               <option value="">— Select —</option>
               {materials.map((m) => <option key={m.id} value={m.value}>{m.label}</option>)}
             </select>
+          </Field>
+        </div>
+
+        <Field label="ADDRESS LINE 1" required>
+          <input type="text" required placeholder="123 Main St"
+            value={address} onChange={(e) => setAddress(e.target.value)} className="sc-input" />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="CITY" required>
+            <input type="text" required placeholder="New York"
+              value={city} onChange={(e) => setCity(e.target.value)} className="sc-input" />
+          </Field>
+          <Field label="STATE" required>
+            <input type="text" required placeholder="NY"
+              value={state} onChange={(e) => setState(e.target.value)} className="sc-input" />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="ZIP CODE" required>
+            <input type="text" required placeholder="10001"
+              value={zip} onChange={(e) => setZip(e.target.value)} className="sc-input" />
+          </Field>
+          <Field label="COUNTRY" required>
+            <input type="text" required placeholder="United States"
+              value={country} onChange={(e) => setCountry(e.target.value)} className="sc-input" />
           </Field>
         </div>
 

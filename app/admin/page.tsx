@@ -220,6 +220,11 @@ function OrdersTab() {
   const [sendingPrice, setSendingPrice] = useState(false);
   const [priceSent, setPriceSent] = useState(false);
   const [waitTime, setWaitTime] = useState("48");
+  const [trackingModal, setTrackingModal] = useState<Quote | null>(null);
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [trackingCarrier, setTrackingCarrier] = useState("USPS");
+  const [sendingTracking, setSendingTracking] = useState(false);
+  const [trackingSent, setTrackingSent] = useState(false);
 
   useEffect(() => {
     supabase.from("quotes").select("*").order("created_at", { ascending: false })
@@ -248,11 +253,44 @@ function OrdersTab() {
         wait_time_hours: waitTime,
       }),
     });
-    // Advance status to approved
+    // Save quoted_price and advance status to approved
+    await supabase.from("quotes").update({ quoted_price: priceValue }).eq("id", priceModal.id);
+    setQuotes(q => q.map(x => x.id === priceModal.id ? { ...x, quoted_price: priceValue } : x));
     await updateStatus(priceModal.id, "approved");
     setSendingPrice(false);
     setPriceSent(true);
     setTimeout(() => { setPriceModal(null); setPriceSent(false); setPriceValue(""); setPriceMsg(""); }, 1800);
+  }
+
+  async function sendTracking() {
+    if (!trackingModal || !trackingNumber) return;
+    setSendingTracking(true);
+    await fetch("/api/email/tracking-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        customer_email: trackingModal.email,
+        customer_name: trackingModal.name,
+        order_id: trackingModal.order_id,
+        tracking_number: trackingNumber,
+        tracking_carrier: trackingCarrier,
+      }),
+    });
+    // Save tracking info and advance status to shipped
+    await supabase.from("quotes").update({ tracking_number: trackingNumber, tracking_carrier: trackingCarrier }).eq("id", trackingModal.id);
+    setQuotes(q => q.map(x => x.id === trackingModal.id ? { ...x, tracking_number: trackingNumber, tracking_carrier: trackingCarrier } : x));
+    await updateStatus(trackingModal.id, "shipped");
+    setSendingTracking(false);
+    setTrackingSent(true);
+    setTimeout(() => { setTrackingModal(null); setTrackingSent(false); setTrackingNumber(""); setTrackingCarrier("USPS"); }, 1800);
+  }
+
+  async function markAsPaid(q: Quote) {
+    await supabase.from("quotes").update({ payment_status: "paid" }).eq("id", q.id);
+    setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, payment_status: "paid" } : x));
+    if (q.status === "approved") {
+      await updateStatus(q.id, "printing");
+    }
   }
 
   const filtered = quotes.filter(q => {
@@ -298,12 +336,17 @@ function OrdersTab() {
             <Card key={q.id} className="p-5">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="text-orange-400 font-black tracking-widest text-xs">{q.order_id || "NO-ID"}</span>
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${m.color}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
                       {m.label}
                     </span>
+                    {q.payment_status === "paid" && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-green-500/20 text-green-400 border border-green-500/30">
+                        ✓ PAID
+                      </span>
+                    )}
                   </div>
                   <p className="text-white font-semibold">{q.name}</p>
                   <p className="text-white/40 text-xs">{q.email}</p>
@@ -318,8 +361,14 @@ function OrdersTab() {
                 <span>Color: <span className="text-white/70">{q.color || "—"}</span></span>
                 <span>Material: <span className="text-white/70">{q.material || "—"}</span></span>
                 {q.nfc_chip && <span className="text-orange-400 font-medium">+ NFC Chip</span>}
+                {q.quoted_price && <span>Price: <span className="text-orange-300 font-semibold">{q.quoted_price}</span></span>}
                 <span className="text-white/25">{new Date(q.created_at).toLocaleDateString()}</span>
               </div>
+              {q.shipping_address && (
+                <p className="mt-2 text-xs text-white/45">
+                  <span className="text-white/25">Ship to:</span> <span className="text-white/65">{q.shipping_address}</span>
+                </p>
+              )}
               {q.model_url && (
                 <a href={q.model_url} target="_blank" rel="noopener noreferrer"
                   className="mt-2 text-xs text-blue-400 hover:text-blue-300 underline block truncate transition-colors">
@@ -329,11 +378,23 @@ function OrdersTab() {
               {q.customizations && (
                 <p className="mt-2 text-xs text-white/35 italic bg-white/3 rounded-lg px-3 py-2">{q.customizations}</p>
               )}
-              <div className="mt-3 pt-3 border-t border-white/6">
+              <div className="mt-3 pt-3 border-t border-white/6 flex flex-wrap gap-2">
                 <button onClick={() => { setPriceModal(q); setPriceSent(false); }}
                   className="px-4 py-1.5 bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/30 text-orange-300 text-xs font-semibold rounded-xl transition-all">
                   💌 Send Price Quote
                 </button>
+                {q.status !== "shipped" && (
+                  <button onClick={() => { setTrackingModal(q); setTrackingSent(false); setTrackingNumber(""); setTrackingCarrier("USPS"); }}
+                    className="px-4 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 text-xs font-semibold rounded-xl transition-all">
+                    🚚 Add Tracking
+                  </button>
+                )}
+                {q.payment_status !== "paid" && (
+                  <button onClick={() => markAsPaid(q)}
+                    className="px-4 py-1.5 bg-green-500/15 hover:bg-green-500/25 border border-green-500/30 text-green-300 text-xs font-semibold rounded-xl transition-all">
+                    ✅ Mark as Paid
+                  </button>
+                )}
               </div>
             </Card>
           );
@@ -375,6 +436,52 @@ function OrdersTab() {
                 <button onClick={sendPrice} disabled={sendingPrice || !priceValue}
                   className={`${btn} w-full mt-1 disabled:opacity-40`}>
                   {sendingPrice ? "Sending…" : "Send Price Quote →"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Tracking Modal ─────────────────────────────────────────────────── */}
+      {trackingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#0f0f1a] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-white font-bold text-lg">Add Tracking</h3>
+                <p className="text-white/40 text-xs mt-0.5">{trackingModal.name} · {trackingModal.order_id}</p>
+              </div>
+              <button onClick={() => setTrackingModal(null)} className="text-white/30 hover:text-white text-xl transition-colors">×</button>
+            </div>
+            {trackingSent ? (
+              <div className="text-center py-8">
+                <p className="text-green-400 text-2xl mb-2">✓</p>
+                <p className="text-white font-semibold">Tracking info sent!</p>
+                <p className="text-white/40 text-sm mt-1">Order marked as Shipped.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <div>
+                  <label className="text-white/40 text-xs mb-1 block">Carrier</label>
+                  <select value={trackingCarrier} onChange={e => setTrackingCarrier(e.target.value)}
+                    className={`${inp}`}>
+                    {["USPS", "UPS", "FedEx", "DHL"].map(c => (
+                      <option key={c} value={c} className="bg-[#111]">{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-white/40 text-xs mb-1 block">Tracking Number *</label>
+                  <input placeholder="e.g. 9400111899223397805592" value={trackingNumber}
+                    onChange={e => setTrackingNumber(e.target.value)} className={inp} autoFocus />
+                </div>
+                <p className="text-white/30 text-xs">
+                  Email will be sent to <span className="text-white/60">{trackingModal.email}</span> with tracking info.
+                </p>
+                <button onClick={sendTracking} disabled={sendingTracking || !trackingNumber}
+                  className={`${btn} w-full mt-1 disabled:opacity-40`}>
+                  {sendingTracking ? "Sending…" : "Send Tracking →"}
                 </button>
               </div>
             )}
@@ -721,9 +828,28 @@ function SettingsTab() {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const [paypalUsername, setPaypalUsername] = useState("");
+  const [cashappTag, setCashappTag] = useState("");
+  const [venmoUsername, setVenmoUsername] = useState("");
+  const [stripeLink, setStripeLink] = useState("");
+  const [paymentSaved, setPaymentSaved] = useState(false);
+  const [paymentBusy, setPaymentBusy] = useState(false);
+
   useEffect(() => {
     supabase.from("settings").select("value").eq("key", "wait_time_hours").single()
       .then(({ data }) => { if (data?.value) setWaitTime(data.value); });
+    supabase.from("settings").select("key,value")
+      .in("key", ["paypal_username", "cashapp_tag", "venmo_username", "stripe_link"])
+      .then(({ data }) => {
+        if (data) {
+          for (const row of data) {
+            if (row.key === "paypal_username") setPaypalUsername(row.value ?? "");
+            if (row.key === "cashapp_tag") setCashappTag(row.value ?? "");
+            if (row.key === "venmo_username") setVenmoUsername(row.value ?? "");
+            if (row.key === "stripe_link") setStripeLink(row.value ?? "");
+          }
+        }
+      });
   }, []);
 
   async function save() {
@@ -732,6 +858,19 @@ function SettingsTab() {
     setBusy(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  }
+
+  async function savePayment() {
+    setPaymentBusy(true);
+    await Promise.all([
+      supabase.from("settings").upsert({ key: "paypal_username", value: paypalUsername }),
+      supabase.from("settings").upsert({ key: "cashapp_tag", value: cashappTag }),
+      supabase.from("settings").upsert({ key: "venmo_username", value: venmoUsername }),
+      supabase.from("settings").upsert({ key: "stripe_link", value: stripeLink }),
+    ]);
+    setPaymentBusy(false);
+    setPaymentSaved(true);
+    setTimeout(() => setPaymentSaved(false), 2000);
   }
 
   return (
@@ -762,6 +901,39 @@ function SettingsTab() {
         <button onClick={save} disabled={busy} className={`${btn} ${saved ? "bg-green-500 hover:bg-green-400" : ""}`}>
           {saved ? "✓ Saved!" : busy ? "Saving…" : "Save Settings"}
         </button>
+      </Card>
+
+      {/* Payment Methods */}
+      <Card className="p-6 max-w-lg mt-6">
+        <p className="text-white/50 text-xs uppercase tracking-widest font-semibold mb-5">Payment Methods</p>
+        <p className="text-white/30 text-xs mb-5">
+          These are included as payment buttons in price quote emails sent to customers.
+        </p>
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="text-white/70 text-sm font-medium block mb-1.5">PayPal Username</label>
+            <p className="text-white/30 text-xs mb-2">e.g. starscraft3d (used in paypal.me/username/amount)</p>
+            <input placeholder="starscraft3d" value={paypalUsername} onChange={e => setPaypalUsername(e.target.value)} className={inp} />
+          </div>
+          <div>
+            <label className="text-white/70 text-sm font-medium block mb-1.5">CashApp $tag</label>
+            <p className="text-white/30 text-xs mb-2">e.g. $starscraft3d</p>
+            <input placeholder="$starscraft3d" value={cashappTag} onChange={e => setCashappTag(e.target.value)} className={inp} />
+          </div>
+          <div>
+            <label className="text-white/70 text-sm font-medium block mb-1.5">Venmo Username</label>
+            <p className="text-white/30 text-xs mb-2">e.g. starscraft3d</p>
+            <input placeholder="starscraft3d" value={venmoUsername} onChange={e => setVenmoUsername(e.target.value)} className={inp} />
+          </div>
+          <div>
+            <label className="text-white/70 text-sm font-medium block mb-1.5">Stripe Payment Link</label>
+            <p className="text-white/30 text-xs mb-2">e.g. https://buy.stripe.com/...</p>
+            <input placeholder="https://buy.stripe.com/..." value={stripeLink} onChange={e => setStripeLink(e.target.value)} className={inp} />
+          </div>
+          <button onClick={savePayment} disabled={paymentBusy} className={`${btn} self-start ${paymentSaved ? "bg-green-500 hover:bg-green-400" : ""}`}>
+            {paymentSaved ? "✓ Saved!" : paymentBusy ? "Saving…" : "Save Payment Methods"}
+          </button>
+        </div>
       </Card>
 
       {/* Email info */}
