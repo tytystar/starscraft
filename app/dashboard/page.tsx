@@ -81,7 +81,7 @@ export default function DashboardPage() {
 
   function handlePin(e: React.FormEvent) {
     e.preventDefault();
-    if (pin === process.env.NEXT_PUBLIC_ADMIN_PIN) {
+    if (pin === (process.env.NEXT_PUBLIC_ADMIN_PIN ?? "").replace(/^﻿/, "").trim()) {
       sessionStorage.setItem(PIN_KEY, "true");
       setPinVerified(true);
       setPinError(false);

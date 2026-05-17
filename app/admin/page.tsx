@@ -75,7 +75,7 @@ export default function AdminPage() {
 
   function handlePin(e: React.FormEvent) {
     e.preventDefault();
-    if (pin === process.env.NEXT_PUBLIC_ADMIN_PIN) { setPinErr(false); setStage("dashboard"); }
+    if (pin === (process.env.NEXT_PUBLIC_ADMIN_PIN ?? "").replace(/^﻿/, "").trim()) { setPinErr(false); setStage("dashboard"); }
     else { setPinErr(true); setPin(""); }
   }
 
