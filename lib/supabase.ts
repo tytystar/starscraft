@@ -1,8 +1,11 @@
 import { createBrowserClient } from "@supabase/ssr";
 
+// Strip BOM (U+FEFF) and whitespace that PowerShell sometimes adds to env vars
+const clean = (s: string | undefined) => (s ?? "").replace(/^﻿/, "").trim();
+
 export const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  clean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+  clean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 );
 
 export type QuoteStatus =
