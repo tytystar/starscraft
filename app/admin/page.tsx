@@ -286,11 +286,27 @@ function OrdersTab() {
   }
 
   async function markAsPaid(q: Quote) {
-    await supabase.from("quotes").update({ payment_status: "paid" }).eq("id", q.id);
-    setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, payment_status: "paid" } : x));
-    if (q.status === "approved") {
+    const paidAt = new Date().toISOString();
+    await supabase.from("quotes").update({ payment_status: "paid", paid_at: paidAt }).eq("id", q.id);
+    setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, payment_status: "paid", paid_at: paidAt } : x));
+    if (q.status === "approved" || q.status === "received") {
       await updateStatus(q.id, "printing");
     }
+    // Send payment confirmed email
+    await fetch("/api/email/payment-confirmed", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        customer_email: q.email,
+        customer_name: q.name,
+        order_id: q.order_id,
+        model_url: q.model_url,
+        quantity: q.quantity,
+        color: q.color,
+        material: q.material,
+        wait_time_hours: waitTime,
+      }),
+    }).catch(() => {});
   }
 
   const filtered = quotes.filter(q => {

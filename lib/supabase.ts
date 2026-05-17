@@ -31,6 +31,7 @@ export type Quote = {
   tracking_carrier: string | null;
   quoted_price: string | null;
   payment_status: string;
+  paid_at: string | null;
 };
 
 export type TimeLapse = {
