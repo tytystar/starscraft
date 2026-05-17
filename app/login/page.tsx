@@ -359,8 +359,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-[#020209]">
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+    <div className="relative w-screen min-h-screen bg-[#020209] overflow-x-hidden overflow-y-auto lg:overflow-hidden lg:h-screen">
+      <canvas ref={canvasRef} className="fixed lg:absolute inset-0 w-full h-full" />
 
       {/* ─── Left panel ───────────────────────────────────────────────────────
           clip-path is controlled by the canvas loop — all content reveals
@@ -526,6 +526,114 @@ export default function LoginPage() {
           <p className="text-orange-400/60 font-mono text-[10px] tracking-widest">
             PRECISION FDM · LAYER BY LAYER · EVERY TIME
           </p>
+        </div>
+      </div>
+
+      {/* ─── Mobile login card (hidden on lg) ────────────────────────────────── */}
+      <div className="relative z-10 lg:hidden mx-5 mt-8 border border-orange-500/30 bg-black/70 backdrop-blur-sm p-5 rounded-lg">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-5 h-5 rounded border border-orange-500/60 flex items-center justify-center">
+            <div className="w-1.5 h-1.5 bg-orange-500 rounded-sm"/>
+          </div>
+          <span className="text-xs font-black tracking-[0.2em] uppercase text-orange-400">Starscraft</span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"/>
+            <span className="text-[9px] font-mono text-white/25 tracking-widest">ONLINE</span>
+          </div>
+        </div>
+        <h1 className="font-bold text-white text-xl mb-1">{mode==="signin"?"Welcome back":"Create account"}</h1>
+        <p className="text-white/30 text-sm mb-4">{mode==="signin"?"Sign in to submit quotes and track your orders.":"Join Starscraft to get custom 3D prints made."}</p>
+        <div className="flex rounded-lg overflow-hidden border border-white/[0.07] mb-4 bg-white/[0.02]">
+          {(["signin","signup"] as Mode[]).map(m=>(
+            <button key={m} onClick={()=>{setMode(m);setErr("");setOk("");}}
+              className={`flex-1 py-2 font-mono tracking-widest uppercase text-xs transition-all ${mode===m?"bg-orange-500/20 text-orange-400":"text-white/20 hover:text-white/40"}`}>
+              {m==="signin"?"Sign In":"Sign Up"}
+            </button>
+          ))}
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          {mode==="signup"&&(
+            <input type="text" placeholder="Full name" value={name} onChange={e=>setName(e.target.value)} required
+              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 py-3 text-white text-sm outline-none focus:border-orange-400/50 transition-colors placeholder:text-white/20"/>
+          )}
+          <input type="email" placeholder="Email address" value={email} onChange={e=>setEmail(e.target.value)} required autoComplete="email"
+            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 py-3 text-white text-sm outline-none focus:border-orange-400/50 transition-colors placeholder:text-white/20"/>
+          <input type="password" placeholder="Password" value={pass} onChange={e=>setPass(e.target.value)} required
+            autoComplete={mode==="signin"?"current-password":"new-password"}
+            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 py-3 text-white text-sm outline-none focus:border-orange-400/50 transition-colors placeholder:text-white/20"/>
+          {err&&<p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">⚠ {err}</p>}
+          {ok &&<p className="text-green-400 text-xs bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">✓ {ok}</p>}
+          <button type="submit" disabled={busy}
+            className="w-full py-3 font-bold tracking-widest uppercase text-white text-sm rounded-lg disabled:opacity-50"
+            style={{background:"linear-gradient(135deg,#f97316,#c2410c)",boxShadow:"0 0 40px rgba(249,115,22,0.3)"}}>
+            {busy?"Processing…":mode==="signin"?"Sign In":"Create Account"}
+          </button>
+        </form>
+        <div className="mt-4 pt-3 border-t border-white/[0.05] text-center text-xs text-white/20">
+          {mode==="signin"
+            ?<><span>No account? </span><button onClick={()=>{setMode("signup");setErr("");}} className="text-orange-400/60">Register free</button></>
+            :<><span>Have an account? </span><button onClick={()=>{setMode("signin");setErr("");}} className="text-orange-400/60">Sign in</button></>}
+        </div>
+      </div>
+
+      {/* ─── Mobile info sections (hidden on lg) ─────────────────────────────── */}
+      <div className="relative z-10 lg:hidden px-5 pb-10 mt-6 flex flex-col gap-5">
+        {/* What is Starscraft */}
+        <div className="border border-orange-500/20 bg-black/60 backdrop-blur-sm p-5 rounded-lg">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse flex-shrink-0"/>
+            <span className="font-mono tracking-widest uppercase text-orange-400 font-semibold text-[11px]">What Is Starscraft?</span>
+          </div>
+          <h2 className="text-white font-black leading-tight mb-2 text-lg">
+            Custom 3D Printing, <span className="text-orange-400">Simplified.</span>
+          </h2>
+          <p className="text-white/60 text-sm mb-4">
+            Bring your ideas to life — upload a model, choose your specs, and we handle the rest.
+          </p>
+          <div className="flex flex-col gap-2.5">
+            {[
+              ["📁", "Upload any STL file"],
+              ["🎨", "Pick color & material"],
+              ["📦", "Order 1 to 1,000+ units"],
+              ["📡", "Optional NFC chip embed"],
+              ["🚀", "Fast, tracked delivery"],
+            ].map(([icon, text]) => (
+              <div key={text} className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center flex-shrink-0 text-base">{icon}</div>
+                <span className="text-white/80 text-sm">{text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* How it works */}
+        <div className="border border-orange-500/20 bg-black/60 backdrop-blur-sm p-5 rounded-lg">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse flex-shrink-0"/>
+            <span className="font-mono tracking-widest uppercase text-orange-400 font-semibold text-[11px]">How It Works</span>
+          </div>
+          <h2 className="text-white font-black leading-tight mb-2 text-lg">
+            File to Front Door. <span className="text-orange-400">5 Simple Steps.</span>
+          </h2>
+          <p className="text-white/60 text-sm mb-4">
+            From quote to delivery — transparent, trackable, and built for quality.
+          </p>
+          <div className="flex flex-col gap-2.5">
+            {[
+              ["01", "Submit your STL + quote request"],
+              ["02", "We review, price & approve"],
+              ["03", "Watch live time-lapses as we print"],
+              ["04", "Quality check before it ships"],
+              ["05", "Full tracking, fast delivery"],
+            ].map(([n, text]) => (
+              <div key={n} className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/25 flex items-center justify-center">
+                  <span className="font-black text-orange-400 text-xs">{n}</span>
+                </div>
+                <span className="text-white/80 text-sm">{text}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
